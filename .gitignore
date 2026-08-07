@@ -1,0 +1,10 @@
+﻿node_modules/
+server/node_modules/
+client/node_modules/
+android-app/
+client/android/
+server/.env
+.env
+.idea/
+AI_Model/venv/
+AI_Model/__pycache__/

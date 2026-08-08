@@ -2,6 +2,9 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
+// In-memory cache to guarantee identical responses for identical inputs across platforms
+const aiCache = new Map();
+
 /**
  * POST /api/ai/analyze
  * Body: { patientData, surgeryData, question? }
@@ -13,6 +16,17 @@ exports.analyzePatient = async (req, res) => {
 
     if (!patientData || !surgeryData) {
       return res.status(400).json({ message: 'Patient and surgery data are required' });
+    }
+
+    // Check cache for exact identical request to ensure Web and Android get the same text
+    const cacheKey = JSON.stringify({ 
+      patientId: patientData._id || patientData.id || patientData.patientName,
+      surgeryData: surgeryData,
+      question: question || null 
+    });
+    
+    if (aiCache.has(cacheKey)) {
+      return res.json(aiCache.get(cacheKey));
     }
 
     // Dynamic mock response helper for local demo fallback
@@ -453,7 +467,9 @@ Return ONLY valid JSON, no markdown code block fences:
           console.error('Failed to save chat history to MongoDB', dbErr);
         }
         
-        return res.json({ answer: text });
+        const answerResponse = { answer: text };
+        aiCache.set(cacheKey, answerResponse);
+        return res.json(answerResponse);
       } else {
         const result = await model.generateContent(prompt);
         text = result.response.text();
@@ -463,9 +479,14 @@ Return ONLY valid JSON, no markdown code block fences:
       try {
         const clean = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
         const analysis = JSON.parse(clean);
-        return res.json({ analysis });
+        
+        const analysisResponse = { analysis };
+        aiCache.set(cacheKey, analysisResponse);
+        return res.json(analysisResponse);
       } catch (parseErr) {
-        return res.json({ analysis: null, rawText: text });
+        const fallbackResponse = { analysis: null, rawText: text };
+        aiCache.set(cacheKey, fallbackResponse);
+        return res.json(fallbackResponse);
       }
 
     } catch (apiError) {

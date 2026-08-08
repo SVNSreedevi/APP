@@ -39,15 +39,15 @@ export default function TotalBloodLoss() {
         </div>
 
         {/* Component summary */}
-        <div className="grid grid-cols-2 gap-6 mb-8">
-          <div className="p-6 bg-blue-500/5 rounded-3xl border border-blue-500/10 text-center">
-            <p className="text-[10px] text-blue-400 font-black uppercase tracking-widest mb-2">Phase 1: Gauze</p>
-            <div className="text-3xl font-black text-white">{(wf.totalGauzeBlood || 0).toFixed(1)}</div>
+        <div className="grid grid-cols-2 gap-3 sm:gap-6 mb-8">
+          <div className="p-3 sm:p-6 bg-blue-500/5 rounded-3xl border border-blue-500/10 text-center overflow-hidden">
+            <p className="text-[9px] sm:text-[10px] text-blue-400 font-black uppercase tracking-widest mb-2 truncate">Phase 1: Gauze</p>
+            <div className="text-2xl sm:text-3xl font-black text-white truncate">{(wf.totalGauzeBlood || 0).toFixed(1)}</div>
             <div className="text-[10px] text-slate-600 font-bold mt-1">ML</div>
           </div>
-          <div className="p-6 bg-cyan-500/5 rounded-3xl border border-cyan-500/10 text-center">
-            <p className="text-[10px] text-cyan-400 font-black uppercase tracking-widest mb-2">Phase 2: Suction</p>
-            <div className="text-3xl font-black text-white">{(wf.suctionBlood || 0).toFixed(1)}</div>
+          <div className="p-3 sm:p-6 bg-cyan-500/5 rounded-3xl border border-cyan-500/10 text-center overflow-hidden">
+            <p className="text-[9px] sm:text-[10px] text-cyan-400 font-black uppercase tracking-widest mb-2 truncate">Phase 2: Suction</p>
+            <div className="text-2xl sm:text-3xl font-black text-white truncate">{(wf.suctionBlood || 0).toFixed(1)}</div>
             <div className="text-[10px] text-slate-600 font-bold mt-1">ML</div>
           </div>
         </div>

@@ -2,8 +2,11 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
-// In-memory cache to guarantee identical responses for identical inputs across platforms
-const aiCache = new Map();
+const crypto = require('crypto');
+
+// In-memory cache to guarantee 100% identical responses across Web and Android for the same inputs
+const analysisCache = new Map();
+const answerCache = new Map();
 
 /**
  * POST /api/ai/analyze
@@ -18,15 +21,20 @@ exports.analyzePatient = async (req, res) => {
       return res.status(400).json({ message: 'Patient and surgery data are required' });
     }
 
-    // Check cache for exact identical request to ensure Web and Android get the same text
-    const cacheKey = JSON.stringify({ 
-      patientId: patientData._id || patientData.id || patientData.patientName,
-      surgeryData: surgeryData,
-      question: question || null 
-    });
-    
-    if (aiCache.has(cacheKey)) {
-      return res.json(aiCache.get(cacheKey));
+    // Generate deterministic hash of the inputs
+    const inputStr = JSON.stringify(patientData) + JSON.stringify(surgeryData);
+    const dataHash = crypto.createHash('md5').update(inputStr).digest('hex');
+
+    // Check cache first to guarantee identical AI responses
+    if (question) {
+      const qHash = crypto.createHash('md5').update(dataHash + question.trim().toLowerCase()).digest('hex');
+      if (answerCache.has(qHash)) {
+        return res.json({ answer: answerCache.get(qHash) });
+      }
+    } else {
+      if (analysisCache.has(dataHash)) {
+        return res.json({ analysis: analysisCache.get(dataHash) });
+      }
     }
 
     // Dynamic mock response helper for local demo fallback
@@ -467,9 +475,10 @@ Return ONLY valid JSON, no markdown code block fences:
           console.error('Failed to save chat history to MongoDB', dbErr);
         }
         
-        const answerResponse = { answer: text };
-        aiCache.set(cacheKey, answerResponse);
-        return res.json(answerResponse);
+        
+        const qHash = crypto.createHash('md5').update(dataHash + question.trim().toLowerCase()).digest('hex');
+        answerCache.set(qHash, text);
+        return res.json({ answer: text });
       } else {
         const result = await model.generateContent(prompt);
         text = result.response.text();
@@ -479,14 +488,10 @@ Return ONLY valid JSON, no markdown code block fences:
       try {
         const clean = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
         const analysis = JSON.parse(clean);
-        
-        const analysisResponse = { analysis };
-        aiCache.set(cacheKey, analysisResponse);
-        return res.json(analysisResponse);
+        analysisCache.set(dataHash, analysis);
+        return res.json({ analysis });
       } catch (parseErr) {
-        const fallbackResponse = { analysis: null, rawText: text };
-        aiCache.set(cacheKey, fallbackResponse);
-        return res.json(fallbackResponse);
+        return res.json({ analysis: null, rawText: text });
       }
 
     } catch (apiError) {

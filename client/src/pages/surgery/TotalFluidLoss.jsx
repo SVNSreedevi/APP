@@ -231,9 +231,9 @@ export default function TotalFluidLoss() {
                  <MdBloodtype className="text-3xl text-emerald-400" />
               </div>
               <p className="text-[11px] text-emerald-400 font-black uppercase tracking-[0.3em] mb-3">Net Surgical Fluid Loss</p>
-              <div className="text-7xl font-black text-white tracking-tighter">
+              <div className="text-5xl sm:text-7xl font-black text-white tracking-tighter break-words">
                 {result.totalFluidLoss.toFixed(1)}
-                <span className="text-2xl opacity-40 ml-2 font-bold tracking-normal uppercase">ml</span>
+                <span className="text-xl sm:text-2xl opacity-40 ml-1 sm:ml-2 font-bold tracking-normal uppercase">ml</span>
               </div>
               <div className="mt-8 flex items-center justify-center gap-3 text-slate-500 font-bold text-[10px] uppercase tracking-widest">
                 <span>{blood.toFixed(1)} B</span>

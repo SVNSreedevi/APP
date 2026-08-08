@@ -288,19 +288,19 @@ export default function AIChatbot({ patientData, surgeryData, onClose, onSaveAna
                     </div>
 
                     {/* Tabs */}
-                    <div className="flex gap-1 bg-slate-900/50 rounded-2xl p-1">
+                    <div className="flex flex-wrap gap-1 bg-slate-900/50 rounded-2xl p-1">
                       {[
                         { id: 'analysis', label: 'Analysis', icon: <FaInfoCircle className="text-[10px]" /> },
                         { id: 'risks', label: 'Risks', icon: <MdWarning className="text-[10px]" /> },
                         { id: 'recommendations', label: 'Clinical Plan', icon: <FaStethoscope className="text-[10px]" /> },
                       ].map(tab => (
                         <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                          className={`flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-2 px-1 sm:px-2 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all min-w-[30%] ${
                             activeTab === tab.id
                               ? 'bg-violet-600 text-white shadow-lg'
                               : 'text-slate-500 hover:text-slate-300'
                           }`}>
-                          {tab.icon}{tab.label}
+                          {tab.icon}<span className="truncate">{tab.label}</span>
                         </button>
                       ))}
                     </div>

@@ -61,9 +61,9 @@ export default function TotalBloodLoss() {
             }`}>
             <FaTint className={`text-4xl mx-auto mb-4 ${result.totalBloodLoss > 500 ? 'text-red-500 animate-pulse' : 'text-slate-600'}`} />
             <p className="text-[11px] text-slate-500 font-black uppercase tracking-[0.2em] mb-2">Total Intra-Operative Blood Loss</p>
-            <div className={`text-7xl font-black tracking-tighter ${result.totalBloodLoss > 500 ? 'text-red-500' : 'text-white'}`}>
+            <div className={`text-5xl sm:text-7xl font-black tracking-tighter break-words ${result.totalBloodLoss > 500 ? 'text-red-500' : 'text-white'}`}>
               {result.totalBloodLoss.toFixed(1)}
-              <span className="text-2xl opacity-40 ml-2 font-bold tracking-normal uppercase">ml</span>
+              <span className="text-xl sm:text-2xl opacity-40 ml-1 sm:ml-2 font-bold tracking-normal uppercase">ml</span>
             </div>
             
             {result.totalBloodLoss > 500 && (

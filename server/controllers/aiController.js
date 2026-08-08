@@ -323,7 +323,12 @@ ICU Care: ${totalBloodLoss > 1500 ? 'Initiate ICU Observation due to significant
 
     try {
       // Live AI connection attempt
-      const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
+      const model = genAI.getGenerativeModel({ 
+        model: 'gemini-flash-latest',
+        generationConfig: {
+          temperature: 0.0,
+        }
+      });
       let prompt;
 
       if (question) {

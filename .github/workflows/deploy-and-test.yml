@@ -3,7 +3,7 @@ name: E2E Tests & Deploy to Pages
 on:
   push:
     branches:
-      - master
+      - main
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -61,39 +61,32 @@ jobs:
         run: npm test
 
       - name: Inject E2E HTML Report into Dist
-        if: always()
         run: |
           mkdir -p client/dist/reports/latest
           mkdir -p client/dist/reports/history/build-${{ github.run_number }}
-          cp WebE2E/Test_Results/HTML/execution-report.html client/dist/reports/latest/execution-report.html || true
-          cp WebE2E/Test_Results/HTML/execution-report.html client/dist/reports/history/build-${{ github.run_number }}/execution-report.html || true
+          cp WebE2E/Test_Results/HTML/execution-report.html client/dist/reports/latest/execution-report.html
+          cp WebE2E/Test_Results/HTML/execution-report.html client/dist/reports/history/build-${{ github.run_number }}/execution-report.html
 
       - name: Write Step Summary
-        if: always()
         run: |
-          TOTAL=1100
-          PASS=1100
-          FAIL=0
-          RATE="100.00"
-          
-          if [ -f WebE2E/Test_Results/report-data.json ]; then
-            TOTAL=$(jq '.total' WebE2E/Test_Results/report-data.json)
-            PASS=$(jq '.totalPass' WebE2E/Test_Results/report-data.json)
-            FAIL=$(jq '.totalFail' WebE2E/Test_Results/report-data.json)
-            RATE=$(awk -v t="$TOTAL" -v p="$PASS" 'BEGIN { if(t>0) printf "%.2f", (p/t)*100; else print "0.00" }')
-          fi
-          
-          echo "## 📊 E2E Web Test Execution Summary (Build #${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
-          echo "| Metric | Value | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|--------|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| **Total Tests** | $TOTAL | ⬜ |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Passed** | $PASS | 🟩 |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Failed** | $FAIL | ➖ |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Pass Rate** | ${RATE}% | 🏆 |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Duration** | ~9.2s | ⏱️ |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🌐 **Native GitHub Pages Deployment**" >> $GITHUB_STEP_SUMMARY
-          echo "- **Latest Report:** [View Report](reports/latest/execution-report.html)" >> $GITHUB_STEP_SUMMARY
+          node -e '
+            const fs = require("fs");
+            const data = JSON.parse(fs.readFileSync("WebE2E/Test_Results/report-data.json", "utf8"));
+            const passRate = ((data.totalPass / data.total) * 100).toFixed(2);
+            const duration = (data.results.reduce((acc, curr) => acc + curr.duration, 0) / 1000).toFixed(2);
+            
+            const summary = `### 📊 E2E Web Test Execution Summary (Build #${{ github.run_number }})\n\n` +
+              `| Metric | Value | Status |\n` +
+              `| --- | --- | --- |\n` +
+              `| **Total Tests** | ${data.total} | 📝 |\n` +
+              `| **Passed** | ${data.totalPass} | ✅ |\n` +
+              `| **Failed** | ${data.totalFail} | ${data.totalFail === 0 ? "➖" : "❌"} |\n` +
+              `| **Pass Rate** | ${passRate}% | 🏆 |\n` +
+              `| **Duration** | ${duration}s | ⏱️ |\n\n` +
+              `🌐 **Native GitHub Pages Deployment**\n`;
+              
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
+          '
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

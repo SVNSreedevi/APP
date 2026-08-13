@@ -40,6 +40,7 @@ export default function AIChatbot({ patientData, surgeryData, onClose, onSaveAna
   const [activeTab, setActiveTab] = useState('analysis');
   const [savingReport, setSavingReport] = useState(false);
   const [savedReport, setSavedReport] = useState(false);
+  const [mobileView, setMobileView] = useState('analysis'); // 'analysis' or 'chat'
   const chatEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -241,11 +242,27 @@ export default function AIChatbot({ patientData, surgeryData, onClose, onSaveAna
           ))}
         </div>
 
+        {/* Mobile View Toggle */}
+        <div className="flex lg:hidden bg-slate-900/50 p-1 border-b border-slate-800/30 shrink-0">
+          <button 
+            onClick={() => setMobileView('analysis')}
+            className={`flex-1 py-2 text-[10px] sm:text-xs font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 ${mobileView === 'analysis' ? 'bg-violet-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-300'}`}
+          >
+            <FaBrain /> Analysis
+          </button>
+          <button 
+            onClick={() => setMobileView('chat')}
+            className={`flex-1 py-2 text-[10px] sm:text-xs font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 ${mobileView === 'chat' ? 'bg-violet-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-300'}`}
+          >
+            <FaUser /> Medical Q&A
+          </button>
+        </div>
+
         {/* Main Content */}
-        <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
+        <div className="flex flex-1 overflow-hidden">
 
           {/* Left Panel — Analysis */}
-          <div className="w-full h-[40%] lg:h-auto lg:w-[55%] border-b lg:border-b-0 lg:border-r border-slate-800/50 flex flex-col overflow-hidden shrink-0">
+          <div className={`w-full lg:w-[55%] border-r border-slate-800/50 flex flex-col overflow-hidden shrink-0 ${mobileView === 'analysis' ? 'flex' : 'hidden lg:flex'}`}>
             {phase === 'loading' ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-6">
                 <div className="relative">
@@ -441,7 +458,7 @@ export default function AIChatbot({ patientData, surgeryData, onClose, onSaveAna
           </div>
 
           {/* Right Panel — Chat */}
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className={`flex-1 flex flex-col overflow-hidden ${mobileView === 'chat' ? 'flex' : 'hidden lg:flex'}`}>
             {/* Chat Header */}
             <div className="px-3 sm:px-4 py-2 border-b border-slate-800/30">
               <p className="text-[9px] sm:text-[10px] text-slate-500 font-black uppercase tracking-widest hidden sm:block">Medical Q&A</p>

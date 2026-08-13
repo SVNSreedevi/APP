@@ -1,0 +1,15 @@
+{
+  "name": "web-e2e-suite",
+  "version": "1.0.0",
+  "description": "Mega Web E2E Test Suite",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --timeout 60000 --reporter utils/excelReporter.js tests/**/*.test.js"
+  },
+  "dependencies": {
+    "chromedriver": "^122.0.0",
+    "exceljs": "^4.4.0",
+    "mocha": "^10.3.0",
+    "selenium-webdriver": "^4.18.1"
+  }
+}

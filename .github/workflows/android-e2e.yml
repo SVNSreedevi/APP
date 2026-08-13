@@ -7,13 +7,24 @@ on:
     branches: [ "main", "master" ]
   workflow_dispatch:
 
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+concurrency:
+  group: "pages-android"
+  cancel-in-progress: false
+
 jobs:
   android-e2e-tests:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
-    
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
@@ -27,23 +38,24 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: AIBloodLossEstimatorFluidMonitorAppium/package.json
+        node-version: '20'
 
-    - name: Install Dependencies
+    - name: Install Appium Framework Dependencies
       run: |
         cd AIBloodLossEstimatorFluidMonitorAppium
         npm install
-        # Install uiautomator2 driver using Appium CLI, ignore if already installed
         npx appium driver install uiautomator2 || true
 
-    # - name: Build Debug APK
-    #   run: |
-    #     # Ensure gradlew has execute permission
-    #     chmod +x ./gradlew || true
-    #     ./gradlew assembleDebug --no-daemon
-    #   # Assuming gradle wrapper is in root
+    - name: Install Expo & Build Debug APK
+      run: |
+        cd mobile-app
+        npm install
+        # Generate the android native folder
+        npx expo prebuild -p android --clean
+        # Build the APK
+        cd android
+        chmod +x ./gradlew
+        ./gradlew assembleDebug --no-daemon
 
     - name: Make CI Script Executable
       run: chmod +x AIBloodLossEstimatorFluidMonitorAppium/scripts/ci_run_tests.sh
@@ -56,10 +68,9 @@ jobs:
 
     - name: Run Appium Tests on Emulator
       uses: reactivecircus/android-emulator-runner@v2
-      # env:
-        # Pass the built APK path to the script
-        # Depending on app structure, this path might change
-        # APK_PATH: app/build/outputs/apk/debug/app-debug.apk 
+      env:
+        # Path to the generated APK
+        APK_PATH: mobile-app/android/app/build/outputs/apk/debug/app-debug.apk 
       with:
         api-level: 29
         profile: Nexus 6
@@ -70,40 +81,26 @@ jobs:
         disable-animations: true
         script: ./AIBloodLossEstimatorFluidMonitorAppium/scripts/ci_run_tests.sh
 
-    - name: Upload Test Reports
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: e2e-reports
-        path: |
-          AIBloodLossEstimatorFluidMonitorAppium/execution-report.html
-          AIBloodLossEstimatorFluidMonitorAppium/execution-report.xlsx
-        retention-days: 30
-
     - name: Gather Reports for Deployment
       if: always()
       run: |
-        mkdir -p deploy_reports
-        cp AIBloodLossEstimatorFluidMonitorAppium/execution-report.html deploy_reports/ || true
-        cp AIBloodLossEstimatorFluidMonitorAppium/execution-report.xlsx deploy_reports/ || true
-        if [ ! -f deploy_reports/execution-report.html ]; then
-          echo "<h1>Fatal Error: HTML Report not generated. Check Excel fallback or CI logs.</h1>" > deploy_reports/execution-report.html
-        fi
-
-    - name: Deploy HTML Report to GitHub Pages
+        mkdir -p deploy_reports/reports/latest
+        mkdir -p deploy_reports/reports/history/build-${{ github.run_number }}
+        cp AIBloodLossEstimatorFluidMonitorAppium/execution-report.html deploy_reports/reports/latest/execution-report.html || true
+        cp AIBloodLossEstimatorFluidMonitorAppium/execution-report.html deploy_reports/reports/history/build-${{ github.run_number }}/execution-report.html || true
+        cp AIBloodLossEstimatorFluidMonitorAppium/execution-report.xlsx deploy_reports/reports/latest/execution-report.xlsx || true
+        
+    - name: Setup Pages
       if: always()
-      uses: JamesIves/github-pages-deploy-action@v4
-      with:
-        branch: gh-pages
-        folder: deploy_reports
-        target-folder: reports/latest
-        clean: true
+      uses: actions/configure-pages@v5
 
-    - name: Deploy History HTML Report to GitHub Pages
+    - name: Upload Artifact
       if: always()
-      uses: JamesIves/github-pages-deploy-action@v4
+      uses: actions/upload-pages-artifact@v3
       with:
-        branch: gh-pages
-        folder: deploy_reports
-        target-folder: reports/history/build-${{ github.run_number }}
-        clean: false
+        path: './deploy_reports'
+
+    - name: Deploy to GitHub Pages
+      if: always()
+      id: deployment
+      uses: actions/deploy-pages@v4

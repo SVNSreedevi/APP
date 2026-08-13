@@ -1,53 +1,27 @@
 const fs = require('fs');
+const path = require('path');
 
-function generateSummary(resultsFilePath) {
-    if (!fs.existsSync(resultsFilePath)) {
-        console.error(`Results file not found: ${resultsFilePath}`);
+module.exports = function(summaryFilePath) {
+    const jsonPath = path.join(__dirname, '..', 'execution-report.json');
+    if (!fs.existsSync(jsonPath)) {
+        console.error('[WDIO] No JSON data found for GHA summary.');
         return;
     }
-
-    const lines = fs.readFileSync(resultsFilePath, 'utf-8').split('\n').filter(Boolean);
-    const results = lines.map(line => JSON.parse(line));
-
-    const total = results.length;
-    const passed = results.filter(r => r.passed).length;
-    const failed = results.filter(r => r.failed).length;
-    const skipped = results.filter(r => !r.passed && !r.failed).length;
     
-    const passRate = total > 0 ? ((passed / total) * 100).toFixed(2) : 0;
-
-    let summaryMarkdown = `## Appium E2E Test Execution Summary 📱\n\n`;
-    summaryMarkdown += `| Metric | Value |\n`;
-    summaryMarkdown += `|---|---|\n`;
-    summaryMarkdown += `| Total Tests | ${total} |\n`;
-    summaryMarkdown += `| Passed ✅ | ${passed} |\n`;
-    summaryMarkdown += `| Failed ❌ | ${failed} |\n`;
-    summaryMarkdown += `| Skipped ⏭️ | ${skipped} |\n`;
-    summaryMarkdown += `| Pass Rate | **${passRate}%** |\n\n`;
-
-    if (failed > 0) {
-        summaryMarkdown += `### Failed Tests\n`;
-        const failedTests = results.filter(r => r.failed).slice(0, 10);
-        failedTests.forEach(test => {
-            summaryMarkdown += `- \`${test.title}\`: ${test.error || 'Unknown error'}\n`;
-        });
-        if (failed > 10) {
-            summaryMarkdown += `- *...and ${failed - 10} more.*\n`;
-        }
-    }
-
-    const summaryFile = process.env.GITHUB_STEP_SUMMARY;
-    if (summaryFile) {
-        fs.appendFileSync(summaryFile, summaryMarkdown);
-        console.log('Appended summary to GITHUB_STEP_SUMMARY');
-    } else {
-        console.log('GITHUB_STEP_SUMMARY not set, printing to console instead:');
-        console.log(summaryMarkdown);
-    }
-}
-
-// If executed directly
-if (require.main === module) {
-    const resultsFile = process.argv[2] || '.wdio-results.jsonl';
-    generateSummary(resultsFile);
-}
+    const data = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+    const passRate = ((data.totalPass / data.total) * 100).toFixed(2);
+    const duration = (data.results.reduce((acc, curr) => acc + curr.duration, 0) / 1000).toFixed(2);
+    const runNumber = process.env.GITHUB_RUN_NUMBER || 'Local';
+    
+    const summary = `### 📱 Appium Android E2E Execution Summary (Build #${runNumber})\n\n` +
+      `| Metric | Value | Status |\n` +
+      `| --- | --- | --- |\n` +
+      `| **Total Tests** | ${data.total} | 📝 |\n` +
+      `| **Passed** | ${data.totalPass} | ✅ |\n` +
+      `| **Failed** | ${data.totalFail} | ${data.totalFail === 0 ? "➖" : "❌"} |\n` +
+      `| **Pass Rate** | ${passRate}% | 🏆 |\n` +
+      `| **Duration** | ${duration}s | ⏱️ |\n\n` +
+      `🌐 **Native GitHub Pages Deployment**\n`;
+      
+    fs.appendFileSync(summaryFilePath, summary);
+};

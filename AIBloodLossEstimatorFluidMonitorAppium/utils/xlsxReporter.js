@@ -1,136 +1,82 @@
-const ExcelJS = require('exceljs');
-const path = require('path');
+const exceljs = require('exceljs');
 
-let runStartTime;
-const results = [];
-const summary = {
-    total: 0,
-    passed: 0,
-    failed: 0,
-    skipped: 0
+let testResults = [];
+let totalPass = 0;
+let totalFail = 0;
+const typeSummary = {};
+
+exports.startRun = function() {
+    testResults = [];
+    totalPass = 0;
+    totalFail = 0;
 };
-const categoryStats = {};
 
-function startRun() {
-    runStartTime = new Date();
-}
-
-function recordTest(test) {
-    // If duration is 0, give it a random 5-20ms value to avoid 0ms durations
-    let duration = test.duration || 0;
-    if (duration === 0) {
-        duration = Math.floor(Math.random() * 16) + 5;
-    }
-
-    const categoryMatch = test.title.match(/\[(.*?)-\d{3}\]/);
-    const category = categoryMatch ? categoryMatch[1] : 'Unknown';
-
-    if (!categoryStats[category]) {
-        categoryStats[category] = { total: 0, passed: 0, failed: 0, skipped: 0 };
-    }
-
-    categoryStats[category].total++;
-    summary.total++;
-    
-    if (test.passed) {
-        categoryStats[category].passed++;
-        summary.passed++;
-    } else if (test.failed) {
-        categoryStats[category].failed++;
-        summary.failed++;
-    } else {
-        categoryStats[category].skipped++;
-        summary.skipped++;
-    }
-
-    results.push({
-        id: test.title.split(']')[0] + ']',
-        category: category,
-        title: test.title,
-        status: test.passed ? 'PASSED' : (test.failed ? 'FAILED' : 'SKIPPED'),
-        duration: duration,
-        error: test.error || ''
+exports.recordTest = function(data) {
+    testResults.push({
+        title: data.title,
+        category: data.category,
+        state: data.passed ? 'Passed' : 'Failed',
+        duration: data.duration,
+        error: data.error
     });
-}
+    
+    if (data.passed) totalPass++;
+    else totalFail++;
 
-async function generateReport(outputPath) {
-    const workbook = new ExcelJS.Workbook();
-    workbook.creator = 'Appium E2E Automation';
-    workbook.created = new Date();
+    if (!typeSummary[data.category]) {
+        typeSummary[data.category] = { total: 0, pass: 0, fail: 0 };
+    }
+    typeSummary[data.category].total++;
+    if (data.passed) typeSummary[data.category].pass++;
+    else typeSummary[data.category].fail++;
+};
 
-    // Sheet 1: Summary
-    const summarySheet = workbook.addWorksheet('Summary');
-    summarySheet.columns = [
-        { header: 'Metric', key: 'metric', width: 25 },
-        { header: 'Value', key: 'value', width: 15 }
+exports.generateReport = async function(outputPath) {
+    const workbook = new exceljs.Workbook();
+    
+    // Sheet 1: Summary Stats
+    const sheet1 = workbook.addWorksheet('Summary');
+    sheet1.columns = [
+        { header: 'Metric', key: 'metric', width: 20 },
+        { header: 'Value', key: 'value', width: 20 }
     ];
-    
-    const passRate = summary.total > 0 ? ((summary.passed / summary.total) * 100).toFixed(2) : 0;
-    
-    summarySheet.addRows([
-        { metric: 'Total Tests', value: summary.total },
-        { metric: 'Passed', value: summary.passed },
-        { metric: 'Failed', value: summary.failed },
-        { metric: 'Skipped', value: summary.skipped },
-        { metric: 'Pass Rate (%)', value: `${passRate}%` },
-        { metric: 'Start Time', value: runStartTime.toISOString() },
-        { metric: 'End Time', value: new Date().toISOString() }
-    ]);
-    
-    // Style Summary Sheet
-    summarySheet.getRow(1).font = { bold: true };
-    summarySheet.getRow(6).getCell(2).font = { color: { argb: 'FF00B050' }, bold: true }; // Pass Rate Green
+    sheet1.addRow({ metric: 'Total Tests', value: totalPass + totalFail });
+    sheet1.addRow({ metric: 'Passed', value: totalPass });
+    sheet1.addRow({ metric: 'Failed', value: totalFail });
+    const passRate = ((totalPass / (totalPass + totalFail)) * 100).toFixed(2);
+    sheet1.addRow({ metric: 'Pass Rate (%)', value: passRate });
 
     // Sheet 2: By Category
-    const categorySheet = workbook.addWorksheet('By Category');
-    categorySheet.columns = [
-        { header: 'Category', key: 'cat', width: 20 },
-        { header: 'Total', key: 'total', width: 10 },
-        { header: 'Passed', key: 'passed', width: 10 },
-        { header: 'Failed', key: 'failed', width: 10 },
-        { header: 'Pass Rate (%)', key: 'rate', width: 15 }
+    const sheet2 = workbook.addWorksheet('By Category');
+    sheet2.columns = [
+        { header: 'Category', key: 'category', width: 40 },
+        { header: 'Total Tests', key: 'total', width: 15 },
+        { header: 'Passed', key: 'pass', width: 15 },
+        { header: 'Failed', key: 'fail', width: 15 }
     ];
-
-    Object.keys(categoryStats).forEach(cat => {
-        const stats = categoryStats[cat];
-        const rate = stats.total > 0 ? ((stats.passed / stats.total) * 100).toFixed(2) : 0;
-        categorySheet.addRow({
-            cat: cat,
-            total: stats.total,
-            passed: stats.passed,
-            failed: stats.failed,
-            rate: `${rate}%`
-        });
-    });
-    categorySheet.getRow(1).font = { bold: true };
+    for (const [cat, data] of Object.entries(typeSummary)) {
+        sheet2.addRow({ category: cat, total: data.total, pass: data.pass, fail: data.fail });
+    }
 
     // Sheet 3: Test Cases
-    const casesSheet = workbook.addWorksheet('Test Cases');
-    casesSheet.columns = [
-        { header: 'ID', key: 'id', width: 20 },
-        { header: 'Category', key: 'category', width: 20 },
-        { header: 'Title', key: 'title', width: 60 },
-        { header: 'Status', key: 'status', width: 15 },
+    const sheet3 = workbook.addWorksheet('Test Cases');
+    sheet3.columns = [
+        { header: 'Category', key: 'category', width: 40 },
+        { header: 'Test Title', key: 'title', width: 80 },
+        { header: 'Status', key: 'state', width: 15 },
         { header: 'Duration (ms)', key: 'duration', width: 15 },
-        { header: 'Error', key: 'error', width: 40 }
+        { header: 'Error', key: 'error', width: 50 }
     ];
-
-    results.forEach(res => {
-        const row = casesSheet.addRow(res);
-        if (res.status === 'PASSED') {
-            row.getCell(4).font = { color: { argb: 'FF00B050' } };
-        } else if (res.status === 'FAILED') {
-            row.getCell(4).font = { color: { argb: 'FFFF0000' } };
-        }
-    });
-    casesSheet.getRow(1).font = { bold: true };
+    testResults.forEach(r => sheet3.addRow(r));
 
     await workbook.xlsx.writeFile(outputPath);
-    console.log(`Excel report generated at ${outputPath}`);
-}
-
-module.exports = {
-    startRun,
-    recordTest,
-    generateReport
+    console.log(`[WDIO] Excel report generated at ${outputPath}`);
+    
+    // Cache data for HTML and Summary generator
+    const fs = require('fs');
+    fs.writeFileSync(outputPath.replace('.xlsx', '.json'), JSON.stringify({
+        totalPass, totalFail, total: totalPass + totalFail,
+        results: testResults,
+        summary: typeSummary
+    }));
 };

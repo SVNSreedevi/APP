@@ -61,13 +61,15 @@ jobs:
         run: npm test
 
       - name: Inject E2E HTML Report into Dist
+        if: always()
         run: |
           mkdir -p client/dist/reports/latest
           mkdir -p client/dist/reports/history/build-${{ github.run_number }}
-          cp WebE2E/Test_Results/HTML/execution-report.html client/dist/reports/latest/execution-report.html
-          cp WebE2E/Test_Results/HTML/execution-report.html client/dist/reports/history/build-${{ github.run_number }}/execution-report.html
+          cp WebE2E/Test_Results/HTML/execution-report.html client/dist/reports/latest/execution-report.html || true
+          cp WebE2E/Test_Results/HTML/execution-report.html client/dist/reports/history/build-${{ github.run_number }}/execution-report.html || true
 
       - name: Write Step Summary
+        if: always()
         run: |
           TOTAL=$(jq '.total' WebE2E/Test_Results/report-data.json || echo "1100")
           PASS=$(jq '.totalPass' WebE2E/Test_Results/report-data.json || echo "1100")

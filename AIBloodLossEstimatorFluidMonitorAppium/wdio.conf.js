@@ -19,7 +19,8 @@ exports.config = {
         'appium:deviceName': 'Android Emulator',
         'appium:automationName': 'UiAutomator2',
         'appium:appWaitActivity': '*',
-        // We will pass the app dynamically or it will be pre-installed by the bash script
+        'appium:appPackage': 'com.svnsreedevi.bloodlossmonitor',
+        'appium:appActivity': '.MainActivity',
         'appium:noReset': true
     }],
     logLevel: 'warn',

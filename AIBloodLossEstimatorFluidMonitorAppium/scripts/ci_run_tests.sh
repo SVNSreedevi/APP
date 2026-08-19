@@ -19,6 +19,9 @@ else
     echo "[CI] APK_PATH not provided or file not found. Assuming app is pre-installed or mocked."
 fi
 
+# Change directory to where WDIO and package.json are located
+cd AIBloodLossEstimatorFluidMonitorAppium || exit 1
+
 # Start Appium Server in background
 echo "[CI] Starting Appium server..."
 npx appium --log-level warn > /tmp/appium.log 2>&1 &

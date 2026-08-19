@@ -9,7 +9,7 @@ on:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -90,17 +90,11 @@ jobs:
         cp AIBloodLossEstimatorFluidMonitorAppium/execution-report.html deploy_reports/reports/history/build-${{ github.run_number }}/execution-report.html || true
         cp AIBloodLossEstimatorFluidMonitorAppium/execution-report.xlsx deploy_reports/reports/latest/execution-report.xlsx || true
         
-    - name: Setup Pages
+    - name: Deploy HTML Reports to GitHub Pages
       if: always()
-      uses: actions/configure-pages@v5
-
-    - name: Upload Artifact
-      if: always()
-      uses: actions/upload-pages-artifact@v3
+      uses: JamesIves/github-pages-deploy-action@v4
       with:
-        path: './deploy_reports'
+        folder: deploy_reports
+        branch: gh-pages
+        clean: false
 
-    - name: Deploy to GitHub Pages
-      if: always()
-      id: deployment
-      uses: actions/deploy-pages@v4

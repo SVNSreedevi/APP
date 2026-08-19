@@ -13,6 +13,9 @@ exports.config = {
         process.env.WDIO_CI_SPEC || './tests/12_e2e/mega_android_1100.test.js'
     ],
     exclude: [],
+    autoCompileOpts: {
+        autoCompile: false
+    },
     maxInstances: 1,
     capabilities: [{
         platformName: 'Android',

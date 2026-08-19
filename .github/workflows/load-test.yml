@@ -3,12 +3,11 @@ name: API Load Testing
 on:
   push:
     paths:
-      - 'server/**'
-      - 'scripts/**'
+      - 'Bloodloss and Fluidloss Monitor SystemBackend/**'
       - '.github/workflows/load-test.yml'
   pull_request:
     paths:
-      - 'server/**'
+      - 'Bloodloss and Fluidloss Monitor SystemBackend/**'
 
 jobs:
   load-test:
@@ -28,9 +27,10 @@ jobs:
 
       - name: Run k6 Load Test
         id: k6_run
-        # Use httpbin to guarantee a 100% success rate for the requested 300 test cases
+        env:
+          BACKEND_URL: 'https://ai-bloodloss-estimator.onrender.com'
         run: |
-          k6 run --summary-export=summary.json scripts/load-test.js || true
+          k6 run --summary-export=summary.json "Bloodloss and Fluidloss Monitor SystemBackend/scripts/load-test.js" || true
 
       - name: Parse Summary & Publish to GHA Step Summary
-        run: node scripts/parseK6Summary.js
+        run: node "Bloodloss and Fluidloss Monitor SystemBackend/scripts/parseK6Summary.js"

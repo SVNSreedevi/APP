@@ -4,7 +4,7 @@
   "description": "Appium E2E testing pipeline",
   "main": "wdio.conf.js",
   "scripts": {
-    "test": "wdio run wdio.conf.js"
+    "test": "wdio run wdio.conf.js --autoCompileOpts.autoCompile=false"
   },
   "dependencies": {
     "@wdio/cli": "^8.36.1",

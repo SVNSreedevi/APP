@@ -70,7 +70,9 @@ jobs:
       uses: reactivecircus/android-emulator-runner@v2
       env:
         # Path to the generated APK
-        APK_PATH: mobile-app/android/app/build/outputs/apk/debug/app-debug.apk 
+        APK_PATH: mobile-app/android/app/build/outputs/apk/debug/app-debug.apk
+        # Pass flags to WDIO CLI to prevent ts-node ESM loader error on Node 20
+        WDIO_CLI_ARGS: --autoCompileOpts.autoCompile=false
       with:
         api-level: 29
         profile: Nexus 6
